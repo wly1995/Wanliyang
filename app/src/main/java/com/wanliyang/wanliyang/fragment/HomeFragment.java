@@ -1,5 +1,6 @@
 package com.wanliyang.wanliyang.fragment;
 
+import android.graphics.Color;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -14,6 +15,7 @@ import com.wanliyang.wanliyang.R;
 import com.wanliyang.wanliyang.adapter.HomeAdapter;
 import com.wanliyang.wanliyang.base.BaseFragment;
 import com.wanliyang.wanliyang.bean.HomeBean;
+import com.wanliyang.wanliyang.utils.CacheUtils;
 import com.wanliyang.wanliyang.utils.Constants;
 import com.zhy.http.okhttp.OkHttpUtils;
 import com.zhy.http.okhttp.callback.StringCallback;
@@ -58,8 +60,11 @@ public class HomeFragment extends BaseFragment {
     public void intiData() {
         super.intiData();
         Log.e("TAG", "主页面初始化完成");
-
+        if(!TextUtils.isEmpty(CacheUtils.getString(mContext,Constants.NEWSCENTER_PAGER_URL))){
+            processData(CacheUtils.getString(mContext,Constants.NEWSCENTER_PAGER_URL));
+        }
         getDataFromNet(url);
+
         //设置监听
         setListenter();
 
@@ -68,6 +73,7 @@ public class HomeFragment extends BaseFragment {
     private void setListenter() {
         //下拉刷新和上拉刷新
         refresh.setMaterialRefreshListener(new MyMaterialRefreshListener());
+        refresh.setSunStyle(isLoadMore);
     }
 
     private void getDataFromNet(String url) {
@@ -75,11 +81,16 @@ public class HomeFragment extends BaseFragment {
         OkHttpUtils.get().url(url).id(100).build().execute(new StringCallback() {
             @Override
             public void onError(Call call, Exception e, int id) {
-
+//                String string = CacheUtils.getString(mContext, Constants.NEWSCENTER_PAGER_URL);
+//                processData(string);
+                refresh.finishRefresh();
+                refresh.setWaveColor(Color.RED);
+                refresh.finishRefreshLoadMore();
             }
 
             @Override
             public void onResponse(String response, int id) {
+                CacheUtils.putString(mContext,Constants.NEWSCENTER_PAGER_URL,response);
                 Log.e("TAG", response);
                 processData(response);
                 refresh.finishRefresh();
@@ -157,11 +168,16 @@ public class HomeFragment extends BaseFragment {
         OkHttpUtils.get().url(moreUrl).id(100).build().execute(new StringCallback() {
             @Override
             public void onError(Call call, Exception e, int id) {
-
+//                String string = CacheUtils.getString(mContext, Constants.NEWSCENTER_PAGER_URL);
+                    refresh.finishRefresh();
+                refresh.finishRefreshLoadMore();
+//                processData(string);
             }
 
             @Override
             public void onResponse(String response, int id) {
+                //请求成功的时候直接缓存到sd卡中
+                CacheUtils.putString(mContext,Constants.NEWSCENTER_PAGER_URL,response);
                 Log.e("TAG", response);
                 processData(response);
                 refresh.finishRefreshLoadMore();
